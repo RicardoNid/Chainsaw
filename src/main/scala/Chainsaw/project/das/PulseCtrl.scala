@@ -16,6 +16,7 @@ case class PulseCtrl(busIf: BusIf, busClockDomain: ClockDomain, pulseBundle: Pul
       busIf.newReg("pulse period control").field(word, AccessType.RW, 125000 / 2, "default 2kHz")
     val pulse_width_points =
       busIf.newReg("pulse width control").field(word, AccessType.RW, 13, "default 104ns")
+
     val pulse_delay_ctrl   = busIf.newReg("pulse delay control")
     val pulse_delay_points = pulse_delay_ctrl.field(byte, AccessType.RW, 0, "pulse1 -> pulse2 delay control")
     val pulse_fix_points   = pulse_delay_ctrl.field(byte, AccessType.RW, 0, "pulse1 -> frame header delay control")
@@ -26,9 +27,17 @@ case class PulseCtrl(busIf: BusIf, busClockDomain: ClockDomain, pulseBundle: Pul
     val agc_points = busIf
       .newReg("automatic gain control")
       .field(word, AccessType.RW, 125000 / 2, "dynamic gain step, same as pulse points by default")
+
+    val pulse_on_ctrl = busIf.newReg("pulse on control")
+    val pulse_on_0    = pulse_on_ctrl.field(Bool(), AccessType.RW, 1, "pulse 0 on/off")
+    val pulse_on_1    = pulse_on_ctrl.field(Bool(), AccessType.RW, 1, "pulse 1 on/off")
   }
 
   val pulse_period_points = getControlData(busArea.pulse_period_points)
+  val pulse_delay_points  = getControlData(busArea.pulse_delay_points)
+  val pulse_fix_points    = getControlData(busArea.pulse_fix_points)
+  val pulse_on_0          = getControlData(busArea.pulse_on_0)
+  val pulse_on_1          = getControlData(busArea.pulse_on_1)
 
   // pre-connection
   pulseBundle.sma0n.clear()
@@ -48,12 +57,12 @@ case class PulseCtrl(busIf: BusIf, busClockDomain: ClockDomain, pulseBundle: Pul
     pulseCounter.clear()
   ) // or, when pulse period goes down, the counter may have to run for 1 << 32 cycles before it works again
   private val pulseOn        = (pulseCounter.value < getControlData(busArea.pulse_width_points)).d()
-  private val pulseOnDelayed = getDynamicDelayed(pulseOn, getControlData(busArea.pulse_delay_points))
-  private val pulseBack      = getDynamicDelayed(pulseOn, getControlData(busArea.pulse_fix_points))
+  private val pulseOnDelayed = getDynamicDelayed(pulseOn, pulse_delay_points)
+  private val pulseBack      = getDynamicDelayed(pulseOn, pulse_fix_points)
   val pulseRise              = pulseBack.rise(False) // indicate that the Rayleigh scattering comes
 
-  pulseBundle.sma0p := pulseOn
-  pulseBundle.sma1p := pulseOnDelayed
+  pulseBundle.sma0p := (pulseOn & pulse_on_0).d()
+  pulseBundle.sma1p := (pulseOnDelayed & pulse_on_1).d()
 
   // automatic gain control
   private val gainCounter      = DynamicCounterFreeRun(getControlData(busArea.agc_points))
