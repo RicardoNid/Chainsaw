@@ -18,7 +18,10 @@ case class DfgUnderTest(id: Int) extends Dfg {
       val delayLine           = Seq.iterate(i, coeffs.length)(_.d(2))
       val scaled: Seq[Signal] = delayLine.zip(coeffs).map { case (signal, coeff) => signal * coeff }
       o := scaled.reduce((a: Signal, b: Signal) => (a + b).d())
-    case 2 => // adder graph for constant multiplication
+    case 2 => // fft
+      val coeffs = ROM(Seq(1.0f, 2.0f, 3.0f, 4.0f), parallel = 2)
+//      val coeffs = Seq(ROM(Seq(1.0f, 3.0f)), ROM(Seq(2.0f, 4.0f)))
+      o := i + coeffs(0) + coeffs(1)
 
   }
 }
@@ -38,43 +41,45 @@ object DfgUnderTest extends App {
   // instantiation
   val testId                           = 0
   def getDut                           = DfgUnderTest(testId)
-  def getRet: Seq[Float] => Seq[Float] = FunctionUnderTest(testId, _)
 
-  SpinalConfig().generateVerilog {
-    new Component {
-      val dut = getDut
+  getDut.exportDrawIo("dutGraph" )
+//  def getRet: Seq[Float] => Seq[Float] = FunctionUnderTest(testId, _)
+//
+//  SpinalConfig().generateVerilog {
+//    new Component {
+//      val dut = getDut
+//
+//      val dataIn  = in(Floating(8, 23))
+//      val dataOut = out(Floating(8, 23))
+//
+//      dut.i.floating := dataIn
+//      dataOut        := dut.o.floating
+//
+//      dut.exportDrawIo("dutGraph")
+//      dut.build()
+//    }
+//  }
 
-      val dataIn  = in(Floating(8, 23))
-      val dataOut = out(Floating(8, 23))
-
-      dut.i.floating := dataIn
-      dataOut        := dut.o.floating
-
-      dut.build()
-      dut.exportDrawIo("dutGraph")
-    }
-  }
-
-  SpinalConfig().generateVerilog {
-    new Component {
-      val dut = getDut
-
-      val dataIn  = slave(Stream(Floating(8, 23)))
-      val dataOut = master(Stream(Floating(8, 23)))
-
-      dataIn               >> dut.i.floatingStream
-      dut.o.floatingStream >> dataOut
-
-      dut.useStream = true
-      dut.build()
-    }
-  }
-
-  // simulation
-
-  val stimulus = Seq.fill(20)(Seq(1.0f))
-  val golden   = stimulus.map(getRet)
-
-  DfgStreamTest(getDut, stimulus, golden)
+//  SpinalConfig().generateVerilog {
+//    new Component {
+//      val dut = getDut
+//
+//      val dataIn  = slave(Stream(Floating(8, 23)))
+//      val dataOut = master(Stream(Floating(8, 23)))
+//
+//      dataIn               >> dut.i.floatingStream
+//      dut.o.floatingStream >> dataOut
+//
+//      dut.useStream = true
+//      dut.build()
+//    }
+//  }
+//
+//  // simulation
+//
+//  val stimulus = Seq.fill(20)(Seq(1.0f))
+//  val golden   = stimulus.map(getRet)
+//
+//  DfgStreamTest(getDut, stimulus, golden)
 
 }

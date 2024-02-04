@@ -11,6 +11,7 @@ import spinal.lib.DoCmd
 import java.io.File
 import scala.io.Source
 
+
 /** Abstraction of a Vivado Flow
   * @param designInput
   *   the vivadoFlow design source, it may be directories containing source code|component|both
@@ -85,11 +86,12 @@ case class VivadoFlow[T <: Module](
     vivadoLogger.info(s"Generating tcl script by user configuration...")
 
     var script = ""
-    def getReadCommand(sourcePath: File): String = {
-      if (sourcePath.getPath.endsWith(".sv")) s"read_verilog -sv $sourcePath \n"
-      else if (sourcePath.getPath.endsWith(".v")) s"read_verilog $sourcePath \n"
-      else if (sourcePath.getPath.endsWith(".vhdl") || sourcePath.getPath.endsWith(".vhd")) s"read_vhdl $sourcePath \n"
-      else if (sourcePath.getPath.endsWith(".bin")) "\n"
+    def getReadCommand(sourceFile: File): String = {
+      val sourcePath = sourceFile.getAbsolutePath.replace(File.separator, "/")
+      if (sourcePath.endsWith(".sv")) s"read_verilog -sv $sourcePath \n"
+      else if (sourcePath.endsWith(".v")) s"read_verilog $sourcePath \n"
+      else if (sourcePath.endsWith(".vhdl") || sourcePath.endsWith(".vhd")) s"read_vhdl $sourcePath \n"
+      else if (sourcePath.endsWith(".bin")) "\n"
       else
         throw new IllegalArgumentException(
           s"invalid RTL source path $sourcePath"
@@ -102,7 +104,7 @@ case class VivadoFlow[T <: Module](
       designInput.getRtlDir().foreach { dir =>
         val files = if (dir.isDirectory) dir.listFiles().toSeq else Seq(dir)
         files.foreach { file =>
-          val fileClass      = new File(file.getAbsolutePath)
+          val fileClass      = new File(file.getAbsolutePath.replace(File.separator, "/"))
           val contents       = Source.fromFile(fileClass)
           var trans_contents = ""
           contents.getLines().toSeq.foreach { line =>
@@ -119,14 +121,14 @@ case class VivadoFlow[T <: Module](
     // FIXME: clear directory before run scripts
 
     // create project
-    script += s"create_project ${designInput.getTopModuleName()} ${genScriptDir.getAbsolutePath} -part ${deviceInUse.familyPart} -force\n"
+    script += s"create_project ${designInput.getTopModuleName()} ${genScriptDir.getAbsolutePath.replace(File.separator, "/")} -part ${deviceInUse.familyPart} -force\n"
     script += s"set_property PART ${deviceInUse.familyPart} [current_project]\n"
 
     // reading RTL sources
     designInput.getRtlDir().foreach(path => script += getReadCommand(path))
 
     def addReadXdcTask(): Unit = {
-      script += s"read_xdc ${xdcFileInProject.getAbsolutePath}\n"
+      script += s"read_xdc ${xdcFileInProject.getAbsolutePath.replace(File.separator, "/")}\n"
     }
     def addSynthTask(activateOOC: Boolean = true): Unit = {
       script += s"synth_design -part ${deviceInUse.familyPart}  -top ${designInput.getTopModuleName()} ${if (activateOOC) "-mode out_of_context"
@@ -173,15 +175,15 @@ case class VivadoFlow[T <: Module](
 
     addReadXdcTask()
 
-    val xillybus_pcie_dir = new File(s"/home/ltr/Chainsaw/src/main/resources/ip/xillybus_pcie_ku")
-    script +=
-      s"read_verilog ${xillybus_pcie_dir}/xillybus.v\n" +
-        s"read_verilog ${xillybus_pcie_dir}/xillybus_core.v\n" +
-        s"read_edif ${xillybus_pcie_dir}/xillybus_core.edf\n" +
-        s"import_ip ${xillybus_pcie_dir}/pcie_ku.xci\n" +
-        "report_ip_status\n" +
-        "upgrade_ip [get_ips]\n" +
-        "synth_ip [get_ips]\n"
+//    val xillybus_pcie_dir = new File(s"/home/ltr/Chainsaw/src/main/resources/ip/xillybus_pcie_ku")
+//    script +=
+//      s"read_verilog ${xillybus_pcie_dir}/xillybus.v\n" +
+//        s"read_verilog ${xillybus_pcie_dir}/xillybus_core.v\n" +
+//        s"read_edif ${xillybus_pcie_dir}/xillybus_core.edf\n" +
+//        s"import_ip ${xillybus_pcie_dir}/pcie_ku.xci\n" +
+//        "report_ip_status\n" +
+//        "upgrade_ip [get_ips]\n" +
+//        "synth_ip [get_ips]\n"
 
     taskType match {
       case PROJECT => // do nothing
@@ -208,8 +210,8 @@ case class VivadoFlow[T <: Module](
     vivadoLogger.info(s"Running VivadoFlow...")
     // run vivado
     DoCmd.doCmd(
-      s"${VIVADO.path} -stack 2000 -nojournal -log ${logFile.getAbsolutePath} -mode batch -source ${tclFile.getAbsolutePath}",
-      genScriptDir.getAbsolutePath
+      s"${VIVADO.path} -stack 2000 -nojournal -log ${logFile.getAbsolutePath.replace(File.separator, "/")} -mode batch -source ${tclFile.getAbsolutePath.replace(File.separator, "/")}",
+      genScriptDir.getAbsolutePath.replace(File.separator, "/")
     )
     vivadoLogger.info(s"Finish VivadoFlow...")
   }

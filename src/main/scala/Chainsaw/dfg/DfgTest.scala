@@ -1,13 +1,14 @@
 package Chainsaw.dfg
 
-import Chainsaw.arithmetic.floating._
 import Chainsaw.examples.{StreamPeekFloating, StreamPokeFloating}
-import spinal.core.sim.{SimConfig, _}
+import spinal.core.sim._
 import spinal.core._
 import spinal.lib._
 import spinal.lib.sim._
 
 import scala.collection.mutable.ArrayBuffer
+
+import Chainsaw.arithmetic.floating._
 
 object DfgRawTest {
   def apply(dfg: => Dfg, stimulus: Seq[Seq[Float]]) = {

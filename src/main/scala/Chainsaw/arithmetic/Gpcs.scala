@@ -34,7 +34,7 @@ abstract class Gpc extends CompressorGenerator {
   val inputWeights = inputFormat.zipWithIndex.filter(_._1 > 0).map(_._2)
 
   override def metric(yours: Seq[BigDecimal], golden: Seq[BigDecimal]) = {
-    yours.head.toBigInt() == golden.head.toBigInt()
+    yours.head.toBigInt == golden.head.toBigInt
   }
 
   override def implNaiveH = Some(new ChainsawOperatorModule(this) {
@@ -70,7 +70,7 @@ case class Compressor6to3(override val complementHeap: Seq[Seq[Boolean]] = null)
     val dataBitsIn  = dataIn.head.raw.asBools
     val lutOuts = lutValues
       .map(LUTUtils.getValueWithInverse(_, inverseList))
-      .map(LUT6_2.process(dataBitsIn, _).last)
+      .map(LUT6_2.process(dataBitsIn.toSeq, _).last)
     dataOut.head := lutOuts.asBits().asUInt.toAFix
   }
 }
@@ -105,7 +105,7 @@ case class Compressor15to3(override val complementHeap: Seq[Seq[Boolean]] = null
       (getComplementHeap.last.padTo(1, true) ++ getComplementHeap.head.padTo(5, true)).map(!_),
       (getComplementHeap.last.padTo(1, true) ++ getComplementHeap.head.padTo(5, true)).map(!_)
     )
-    val Seq(right, left) = dataIn.map(_.raw.asBools)
+    val IndexedSeq(right, left) = dataIn.map(_.raw.asBools)
     val lutOuts = lutValues
       .zip(inverseList)
       .map { case (value, inverse) =>

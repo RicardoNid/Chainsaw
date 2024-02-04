@@ -32,8 +32,8 @@ case class Bcm(
   override def fmaxEstimation: HertzNumber = 600 MHz
 
   override def metric(yours: Seq[BigDecimal], golden: Seq[BigDecimal]) = {
-    val yourData   = yours.head.toBigInt()
-    val goldenData = golden.head.toBigInt()
+    val yourData   = yours.head.toBigInt
+    val goldenData = golden.head.toBigInt
     val det = multiplierType match {
       case FullMultiplier => yourData == goldenData
       case MsbMultiplier =>

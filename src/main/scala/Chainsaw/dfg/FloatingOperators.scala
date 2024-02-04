@@ -1,6 +1,6 @@
 package Chainsaw.dfg
 import Chainsaw.NumericType
-import Chainsaw.arithmetic.floating._
+import Chainsaw.arithmetic.floating.flopoco._
 import Chainsaw.edaFlow.Device._
 import spinal.core._
 import spinal.lib.experimental.math.Floating
@@ -95,6 +95,18 @@ class Mux2(implicit dfg: Dfg) extends Operator {
   }
 }
 
+class PeriodicRom(content: Seq[Double], parallel: Int)(implicit dfg: Dfg) extends Operator {
+  override val name: String = "ROM"
+
+  override def inputTypes: Seq[NumericType] = Seq[NumericType]()
+
+  override def outputTypes: Seq[NumericType] = Seq.fill(parallel)(NumericType.Float())
+
+  override def delay: Int = 0
+
+  override def executionTime: Double = 0.0
+}
+
 // by import FloatingOperators._, one can use the operators above inside a DSP Area
 object FloatingOperators {
 
@@ -131,6 +143,16 @@ object FloatingOperators {
   def Switch(switch: Signal, a: Signal, b: Signal)(implicit dfg: Dfg): (Signal, Signal) = {
     val Seq(c, d) = draw(new Switch2, Seq(switch, a, b))
     (c, d)
+  }
+
+  def ROM(content: Seq[Double], parallel: Int)(implicit dfg: Dfg): Seq[Signal] = {
+    val rom = new PeriodicRom(content, parallel)
+    draw(rom, Seq())
+  }
+
+  def ROM(content: Seq[Double])(implicit dfg: Dfg): Signal = {
+    val rom = new PeriodicRom(content, 1)
+    draw(rom, Seq()).head
   }
 
 }

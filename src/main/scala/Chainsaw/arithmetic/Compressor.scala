@@ -124,7 +124,7 @@ trait CompressorGenerator extends ChainsawOperatorGenerator with Compressor with
     this match {
       case _: Gpc => // columns as operands
         testCase.data
-          .map(_.toBigInt())
+          .map(_.toBigInt)
           .zip(valueHeap)
           .foreach { case (int, col) =>
             int
@@ -137,7 +137,7 @@ trait CompressorGenerator extends ChainsawOperatorGenerator with Compressor with
         } // padding
       case _: RowAdder => // rows as operands
         testCase.data
-          .map(_.toBigInt())
+          .map(_.toBigInt)
           .zip(inputTypes.map(_.bitWidth))
           .foreach { case (bigInt, w) =>
             bigInt

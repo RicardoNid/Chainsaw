@@ -1,4 +1,4 @@
-package Chainsaw.arithmetic.floating
+package Chainsaw.arithmetic.FloatingSupport
 
 import Chainsaw.ChainsawFlatSpec
 

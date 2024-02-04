@@ -1,8 +1,8 @@
 package Chainsaw
 
 import org.json4s._
-import org.json4s.jackson.Serialization
-import org.json4s.jackson.Serialization.write
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization.write
 
 import java.io._
 

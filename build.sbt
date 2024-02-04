@@ -2,7 +2,7 @@ import sbt.Keys.unmanagedJars
 import sbt.file
 
 ThisBuild / version      := "1.0"
-ThisBuild / scalaVersion := "2.12.16"
+ThisBuild / scalaVersion := "2.12.11"
 ThisBuild / organization := "org.chainsaw"
 
 // SpinalHDL
@@ -10,6 +10,11 @@ val spinalVersion    = "1.9.4"
 val spinalCore       = "com.github.spinalhdl" %% "spinalhdl-core" % spinalVersion
 val spinalLib        = "com.github.spinalhdl" %% "spinalhdl-lib" % spinalVersion
 val spinalIdslPlugin = compilerPlugin("com.github.spinalhdl" %% "spinalhdl-idsl-plugin" % spinalVersion)
+
+// Chisel
+val chiselVersion = "3.5.6"
+val chisel        = "edu.berkeley.cs" %% "chisel3" % chiselVersion
+addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full)
 
 // JGraphT JDK=1.8
 val jGraphTVersion = "1.4.0" // last version compatible with Java 1.8
@@ -32,18 +37,15 @@ val snakeYaml = "org.yaml" % "snakeyaml" % "1.33"
 // for design pre-placement
 val rapidwright = "com.xilinx.rapidwright" % "rapidwright" % "2022.2.1"
 
-// for ndarray processing
-//val ndarray = "org.tensorflow" % "ndarray" % "0.4.0"
 
 lazy val Chainsaw = (project in file("."))
   .settings(
     name := "Chainsaw",
     libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdslPlugin),
     libraryDependencies ++= Seq(jGraphCore, jGraphExt),
-    libraryDependencies += "org.json4s" %% "json4s-jackson" % "4.0.3",  // for json serialization/deserialization
-    libraryDependencies += "org.scalanlp" %% "breeze" % "1.0",          // for numeric & matrix operations
+    libraryDependencies += chisel,
+    libraryDependencies += "org.scalanlp" %% "breeze" % "1.0",         // for numeric & matrix operations
     libraryDependencies += "cc.redberry" %% "rings.scaladsl" % "2.5.7", // for finite field operations
-    //    libraryDependencies += "cplex.maven" % "cplex" % "12.8", // for cplex solver
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9", // for scala test
     libraryDependencies ++= Seq(optimus, optimusOj, optimusLp),
     libraryDependencies += "com.google.code.gson" % "gson" % "2.10",
@@ -52,12 +54,8 @@ lazy val Chainsaw = (project in file("."))
     libraryDependencies += djlBackend,
     libraryDependencies += snakeYaml,
     libraryDependencies += rapidwright,
-    libraryDependencies += "org.scalanlp" %% "breeze-viz" % "2.1.0",
-    libraryDependencies ++= Seq(
-      "org.scala-graph" %% "graph-core" % "1.13.1",
-      "org.graphstream" % "gs-core" % "1.3"
-    )
-//    libraryDependencies += ndarray
+    libraryDependencies += "org.scalanlp" %% "breeze-viz" % "2.1.0"
+    //    libraryDependencies += "cplex.maven" % "cplex" % "12.8", // for cplex solver
   )
 
 fork := true

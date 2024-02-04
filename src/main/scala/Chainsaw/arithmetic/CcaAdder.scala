@@ -36,11 +36,11 @@ case class CcaAdder(override val width: Int, override val blockWidth: Int)
   override def outputTypes = Seq(NumericType.U(width + 1))
 
   override def impl(testCase: TestCase) = Seq(
-    BigDecimal(testCase.data.map(_.toBigInt()).sum)
+    BigDecimal(testCase.data.map(_.toBigInt).sum)
   )
 
   override def metric(yours: Seq[BigDecimal], golden: Seq[BigDecimal]) =
-    yours.map(_.toBigInt()).equals(golden.map(_.toBigInt()))
+    yours.map(_.toBigInt).equals(golden.map(_.toBigInt))
 
   override def testCases = Seq.fill(1000)(randomTestCase)
 
@@ -50,7 +50,7 @@ case class CcaAdder(override val width: Int, override val blockWidth: Int)
 
   override def implH = new ChainsawOperatorModule(this) {
     // get words
-    val Seq(a, b, cin)  = dataIn.map(_.asUInt())
+    val IndexedSeq(a, b, cin)  = dataIn.map(_.asUInt())
     val (aHead, aWords) = a.subdivideIn(blockWidth bits, strict = false).splitAt(1)
     val (bHead, bWords) = b.subdivideIn(blockWidth bits, strict = false).splitAt(1)
 

@@ -60,7 +60,7 @@ case class ChainsawTest(
   /** -------- get input segments
     * --------
     */
-  val inputSegments: Seq[TestCase] = {
+  val inputSegments: collection.Seq[TestCase] = {
     val raw = stimulus.getOrElse(testCases)
     gen match {
       case frame: Frame =>
@@ -112,9 +112,9 @@ case class ChainsawTest(
 
   def insertInterrupts = {
 
-    def getRandomControl: Seq[BigDecimal] = gen match {
+    def getRandomControl: scala.collection.Seq[BigDecimal] = gen match {
       case dynamic: Dynamic => dynamic.randomControlVector
-      case _                => Seq[BigDecimal]()
+      case _                => scala.collection.Seq[BigDecimal]()
     }
 
     def getInterrupt(cycle: Int) = TestCase(
@@ -177,7 +177,7 @@ case class ChainsawTest(
   /** -------- get golden segments
     * --------
     */
-  val goldenSegments: Seq[Seq[BigDecimal]] = {
+  val goldenSegments: collection.Seq[collection.Seq[BigDecimal]] = {
     val raw = golden.getOrElse(sortedValids.map(impl))
     gen match {
       case frame: Frame =>
@@ -229,8 +229,7 @@ case class ChainsawTest(
     }
 
   // data containers
-  val outputVectors =
-    ArrayBuffer[(Seq[BigDecimal], Boolean, Long)]() // (data,last,time)
+  val outputVectors = ArrayBuffer[(scala.collection.IndexedSeq[BigDecimal], Boolean, Long)]() // (data,last,time)
   val inputSegmentTimes =
     ArrayBuffer[Long]() // starting cycle of each input segment
 

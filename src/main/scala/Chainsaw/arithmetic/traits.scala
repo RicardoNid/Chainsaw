@@ -78,7 +78,7 @@ trait UnsignedMultiplier extends ChainsawOperatorGenerator with MultAttribute wi
   override def testCases = Seq.fill(10000)(TestCase(randomDataVector))
 
   override def metric(yours: Seq[BigDecimal], golden: Seq[BigDecimal]) = {
-    val diff = golden.head.toBigInt() - yours.head.toBigInt()
+    val diff = golden.head.toBigInt - yours.head.toBigInt
     if (diff != BigInt(0)) logger.info(s"diff = $diff")
     multiplierType match {
       case MsbMultiplier =>

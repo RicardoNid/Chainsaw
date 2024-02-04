@@ -87,14 +87,14 @@ case class BaseDspMult(widthX: Int, widthY: Int) extends UnsignedMultiplier {
     case 6 =>
       new ChainsawOperatorModule(this) {
         // TODO: padding for width between 34 and 48
-        val Seq(x, y) = dataIn.map(_.asUInt())
+        val IndexedSeq(x, y) = dataIn.map(_.asUInt())
 
         val xWords = x.subdivideIn(16 bits)
         val yWords = y.subdivideIn(24 bits)
 
         val partials = xWords.zipWithIndex
           .map { case (xWord, i) =>
-            val Seq(yLow, yHigh) = yWords
+            val Seq(yLow, yHigh) = yWords.toSeq
             val prodLow          = (xWord * yLow).d(2)
             val prodHigh         = (xWord.d() * yHigh.d()).d()
             val sum              = (prodLow.takeHigh(16).asUInt +^ prodHigh).d()

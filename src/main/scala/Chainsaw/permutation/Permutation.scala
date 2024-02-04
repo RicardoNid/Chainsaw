@@ -8,7 +8,7 @@ import breeze.linalg._
   * @example
   *   a permutation defined by [0,2,1,3] permutes [a,b,c,d] to [a,c,b,d]
   */
-case class Permutation(permuted: Seq[Int]) {
+class Permutation(val permuted: Seq[Int]) {
 
   val size = permuted.size
   require(permuted.sorted.equals(permuted.indices))
@@ -19,12 +19,27 @@ case class Permutation(permuted: Seq[Int]) {
     */
   def permute[T](dataIn: Seq[T]): Seq[T] = permuted.map(dataIn.apply)
 
-  /** concatenation of permutations
+  /** serial connection of permutations
     */
-  def concat(that: Permutation) = {
-    require(this.size == that.size)
+  def cascade(that: Permutation) = {
+    require(this.size == that.size, s"size mismatch: ${this.size} != ${that.size}")
     Permutation(that.permute(permuted))
   }
+
+  def *(that: Permutation): Permutation = this.cascade(that)
+
+  def ^(times: Int): Permutation = Seq.fill(times)(this).reduce(_.cascade(_)) // power
+
+  /** parallel connection of permutations
+    * @note
+    *   this is not the same as concatenation
+    * @example
+    *   [0,1,2,3] ++ [3,2,1,0] = [0,1,2,3,7,6,5,4]
+    */
+  def ++(that: Permutation): Permutation = Permutation(this.permuted ++ that.permuted.map(_ + this.size))
+
+  def kronecker(times: Int): Permutation = Seq.fill(times)(this).reduce(_ ++ _)
+  def ⊗(times: Int): Permutation = kronecker(times) // kronecker product
 
   def getPermutationMatrix = {
     val content = Array.tabulate(size, size)((i, j) => if (permuted(i) == j) 1 else 0)
@@ -44,11 +59,24 @@ case class Permutation(permuted: Seq[Int]) {
       }
     new DenseMatrix(streamWidth, streamWidth, mappintMatrix.flatten)
   }
+
+  override def toString: String = (0 until size).map(i => s"$i -> ${permuted(i)}").mkString("\n")
 }
 
+case class MatrixInterleave(row: Int, col: Int)
+    extends Permutation(Array.tabulate(col, row)((i, j) => j * col + i).flatten)
+
 object Permutation {
+
+  def apply(permuted: Seq[Int]): Permutation = new Permutation(permuted)
+
+  def identity(size: Int): Permutation = Permutation(0 until size)
 
   /** generate a random permutation of specific size
     */
   def random(size: Int): Permutation = Permutation(scala.util.Random.shuffle((0 until size).toList))
+
+  def matrixInterleave(row: Int, col: Int): Permutation = Permutation(
+    Array.tabulate(col, row)((i, j) => j * col + i).flatten
+  )
 }

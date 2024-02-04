@@ -11,6 +11,6 @@ object ChainsawMetric {
   val sameMetric = (a: BigDecimal, b: BigDecimal) => a == b
 
   val sameAsBigInt = (yours: Seq[BigDecimal], golden: Seq[BigDecimal]) =>
-    yours.map(_.toBigInt()).equals(golden.map(_.toBigInt()))
+    yours.map(_.toBigInt).equals(golden.map(_.toBigInt))
 
 }

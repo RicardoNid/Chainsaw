@@ -1,9 +1,11 @@
-package Chainsaw.arithmetic.floating
+package Chainsaw.arithmetic.floating.flopoco
 
 import Chainsaw.edaFlow.Device._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.experimental.math._
+
+import Chainsaw.arithmetic.floating._
 
 case class FlopocoConstMult(
     exponentSizeIn: Int,

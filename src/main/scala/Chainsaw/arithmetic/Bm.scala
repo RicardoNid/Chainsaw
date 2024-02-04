@@ -27,7 +27,7 @@ case class Bm(override val bmSolution: BmSolution)
     /** -------- operations in Bm
       * --------
       */
-    def splitN(x: WeightedUInt, n: Int): Seq[WeightedUInt] = {
+    def splitN(x: WeightedUInt, n: Int): collection.IndexedSeq[WeightedUInt] = {
       val values = x.value.subdivideIn(n slices) // todo: low to high?
       values
         .zip(x.arithInfo.splitN(n))
@@ -163,8 +163,8 @@ case class Bm(override val bmSolution: BmSolution)
         val segments = Seq
           .tabulate(factorB, factorA) { (i, j) => // for rectangular
             // distribute words to N-split sub modules
-            val as = aWords.zipWithIndex.filter(_._2 % factorB == i).map(_._1)
-            val bs = bWords.zipWithIndex.filter(_._2 % factorA == j).map(_._1)
+            val as = aWords.zipWithIndex.filter(_._2 % factorB == i).map(_._1).toSeq
+            val bs = bWords.zipWithIndex.filter(_._2 % factorA == j).map(_._1).toSeq
             doNSplit(as, bs)
           }
           .flatten

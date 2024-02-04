@@ -30,9 +30,9 @@ object Kara extends MultiplierType
 
 trait VarType extends OperatorType
 
-object Input extends VarType
-
-object Output extends VarType
+//object Input extends VarType
+//
+//object Output extends VarType
 
 object Var extends VarType
 

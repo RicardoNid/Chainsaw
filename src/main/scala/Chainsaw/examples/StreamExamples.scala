@@ -1,6 +1,5 @@
 package Chainsaw.examples
 
-import Chainsaw.arithmetic.floating._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib.experimental.math.Floating
@@ -10,6 +9,8 @@ import spinal.lib.{Stream, _}
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.util.Random
+
+import Chainsaw.arithmetic.floating._
 
 case class DelayLineWithBackPressure() extends Component {
   val dataIn  = slave Stream AFix.U(8 bits)

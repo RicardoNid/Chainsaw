@@ -87,8 +87,8 @@ case class NumericType(val maxRaw: BigInt, val minRaw: BigInt, val exp: Int) {
       s"Literal $constant is too negative to be assigned in this $this (min = $minValue)"
     )
     val intValue = {
-      if (constant >= 0.0) (constant / step).toBigInt()
-      else (constant / step).toBigInt().toBitValue(bitWidth).to2sComplement
+      if (constant >= 0.0) (constant / step).toBigInt
+      else (constant / step).toBigInt.toBitValue(bitWidth).to2sComplement
     }
     ret.raw := intValue
     ret
@@ -196,8 +196,8 @@ object NumericType {
   ): NumericType = {
     val step = BigDecimal(2).pow(exp)
     // TODO: ceil & floor for BigDecimal
-    val maxRaw = (maxValue / step).toBigInt()
-    val minRaw = (minValue / step).toBigInt()
+    val maxRaw = (maxValue / step).toBigInt
+    val minRaw = (minValue / step).toBigInt
     NumericType(maxRaw, minRaw, exp)
   }
 

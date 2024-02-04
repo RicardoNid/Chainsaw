@@ -90,6 +90,6 @@ object DynamicDelayModule extends App {
     }
   }
 
-  new QuartusFlow(dut = DynamicDelayModule(1024, 16), "DyanmicDelay").impl()
+//  new QuartusFlow(dut = DynamicDelayModule(1024, 16), "DyanmicDelay").impl()
 
 }

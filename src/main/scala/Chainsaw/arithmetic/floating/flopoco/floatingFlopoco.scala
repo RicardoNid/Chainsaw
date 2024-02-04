@@ -1,4 +1,4 @@
-package Chainsaw.arithmetic.floating
+package Chainsaw.arithmetic.floating.flopoco
 
 import Chainsaw.edaFlow.Device._
 import Chainsaw.{FLOPOCO, doCmd, doCmds, logger}

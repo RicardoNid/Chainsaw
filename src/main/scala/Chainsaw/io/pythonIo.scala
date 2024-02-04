@@ -446,8 +446,8 @@ object pythonIo {
   def importSignalDouble(file: File): Seq[Double] = importSignalsDouble(file).head
 
   import org.json4s._
-  import org.json4s.jackson.JsonMethods._
-  import org.json4s.jackson.Serialization.write
+  import org.json4s.native.JsonMethods._
+  import org.json4s.native.Serialization.write
 
   /** import serialized python dict for config parameters
     * @param file

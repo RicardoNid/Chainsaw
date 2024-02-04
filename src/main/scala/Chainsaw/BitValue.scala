@@ -39,7 +39,7 @@ case class BitValue(value: BigInt, width: Int) {
   // TODO: by bitCount and Slice
   /** works the same as SpinalHDL subdivideIn on Bits
     */
-  def subdivideIn(n: Int): Seq[BigInt] = {
+  def subdivideIn(n: Int): ArrayBuffer[BigInt] = {
     val padded       = BitValue(value, width.nextMultipleOf(n))
     val segmentWidth = width.divideAndCeil(n)
     val segments     = ArrayBuffer[BigInt]()
