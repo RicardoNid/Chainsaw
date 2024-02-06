@@ -24,6 +24,10 @@ object FloatingPointExamples {
 
   def main(args: Array[String]): Unit = {
     import Chainsaw.arithmetic.floating._ // for pimper
+
+    SpinalVerilog(FpAddByChisel())
+    if (Chainsaw.FLOPOCO.exist()) SpinalVerilog(FpAddByFlopoco())
+
     SpinalSimConfig().withFstWave.doSim(FpAddByChisel()) { dut =>
       dut.clockDomain.forkStimulus(10)
       dut.clockDomain.waitSampling()
@@ -33,6 +37,7 @@ object FloatingPointExamples {
       dut.clockDomain.waitSampling(10)
       assert(dut.d.toFloat == 9.0, dut.d.toFloat)
     }
+
   }
 
 }
