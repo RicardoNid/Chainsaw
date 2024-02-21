@@ -1,6 +1,5 @@
 package Chainsaw.algorithms
 
-import Chainsaw.permutation.Permutation
 import org.scalatest.flatspec.AnyFlatSpecLike
 
 class BitonicTest extends AnyFlatSpecLike {

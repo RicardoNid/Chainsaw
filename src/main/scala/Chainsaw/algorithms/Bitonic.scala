@@ -1,8 +1,5 @@
 package Chainsaw.algorithms
 
-import Chainsaw.permutation.Permutation
-import spinal.core.log2Up
-
 /** compare and swap module
   */
 case class Cas[T](cmp: (T, T) => Int, ascending: Boolean) extends Transform[T] {
