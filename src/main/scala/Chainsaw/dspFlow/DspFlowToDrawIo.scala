@@ -1,6 +1,7 @@
 package Chainsaw.dspFlow
 
 import java.io.{File, FileOutputStream}
+import com.github.dwickern.macros.NameOf.nameOf
 
 /** methods visualizing Chainsaw Dfg by mapping it to a .drawio xml file
   */
@@ -31,6 +32,7 @@ object DspFlowToDrawIo {
     def vertexToXml(vertex: DspVertex, x: Int, y: Int) = {
       val id    = vertex.hashCode()
       val label = vertex.name
+      println(s"vertex $label at ($x, $y)")
       val style = "ellipse;whiteSpace=wrap;html=1;aspect=fixed;"
       s"""
          |<mxCell id="$id" value="$label" style="$style" parent="1" vertex="1">

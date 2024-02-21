@@ -1,14 +1,14 @@
 package Chainsaw.dspFlow
 
-import Chainsaw.NumericType
-import spinal.lib.experimental.math.Floating
-
 import scala.collection.JavaConverters._
+
+sealed trait DspVertexType
+case object NoOpType extends DspVertexType
 
 abstract class DspVertex(implicit dfg: DspFlow) {
 
   // attributes
-  val name: String
+  var name: String = _
 
   def inCount: Int
 
@@ -18,7 +18,7 @@ abstract class DspVertex(implicit dfg: DspFlow) {
   def executionTime: Double
 
   // naming & readability
-  override def toString: String = name // TODO: get name by reflection
+  override def toString: String = name
 
   // utils
 
@@ -31,7 +31,7 @@ abstract class DspVertex(implicit dfg: DspFlow) {
 }
 
 class NoOp(implicit dfg: DspFlow) extends DspVertex {
-  override val name: String = "NoOp"
+  this.name = "NoOp"
 
   override val delay: Int            = 0
   override val executionTime: Double = 0.0
@@ -41,24 +41,58 @@ class NoOp(implicit dfg: DspFlow) extends DspVertex {
   override def outCount: Int = 1
 }
 
-class Add(implicit dfg: DspFlow) extends DspVertex {
-  override val name: String = "Add"
+class Inter(signalName: String)(implicit dfg: DspFlow) extends NoOp {
+  this.name = signalName
+}
+
+class Constant(val value: Double)(implicit dfg: DspFlow) extends DspVertex {
+  this.name = value.toString
 
   override val delay: Int            = 0
   override val executionTime: Double = 0.0
 
-  override def inCount: Int = 2
+  override def inCount: Int = 0
 
   override def outCount: Int = 1
 }
 
-class Mult(implicit dfg: DspFlow) extends DspVertex {
-  override val name: String = "Mult"
+////////////////////
+// operators
+////////////////////
+
+abstract class BinaryOp(implicit dfg: DspFlow) extends DspVertex {
+
+//  override def name_=(newName: String): Unit = throw new Exception("name of BinaryOp should not be changed")
+
+  override def inCount: Int  = 2
+  override def outCount: Int = 1
+}
+
+class Add(implicit dfg: DspFlow) extends BinaryOp {
+  this.name = "Add"
 
   override val delay: Int            = 0
   override val executionTime: Double = 0.0
 
-  override def inCount: Int = 2
+}
 
-  override def outCount: Int = 1
+class Mult(implicit dfg: DspFlow) extends BinaryOp {
+  this.name = "Mult"
+
+  override val delay: Int            = 0
+  override val executionTime: Double = 0.0
+}
+
+class ConstMult(val constant:Double)(implicit dfg: DspFlow) extends BinaryOp {
+  this.name = f"X$constant%.2f"
+
+  override val delay: Int            = 0
+  override val executionTime: Double = 0.0
+}
+
+class Sub(implicit dfg: DspFlow) extends BinaryOp {
+  this.name = "Sub"
+
+  override val delay: Int            = 0
+  override val executionTime: Double = 0.0
 }
