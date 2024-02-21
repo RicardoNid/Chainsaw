@@ -66,6 +66,13 @@ object FloatingOpsChisel {
       op.z
     }
 
+    def *(that: Float): Floating = {
+      val op = FloatingBinaryOp(f.exponentSize, f.mantissaSize, "Mul")
+      op.x := f
+      op.y := that
+      op.z
+    }
+
   }
 
   def main(args: Array[String]): Unit = {

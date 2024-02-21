@@ -432,6 +432,19 @@ package object Chainsaw {
 
   def nextPow2(n: Int): BigInt = BigInt(1) << log2Up(n)
 
+  def logR(n: Int, radix: Int) = {
+    var current = n
+    var ret = 0
+    while (current > 1) {
+      require(current % radix == 0)
+      current /= radix
+      ret += 1
+    }
+    ret
+  }
+
+  def powR(radix: Int, exp: Int) = Seq.fill(exp)(radix).product
+
   @tailrec
   def gcd(a: BigInt, b: BigInt): BigInt = {
     val (p, q) = if (a >= b) (a, b) else (b, a)

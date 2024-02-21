@@ -17,6 +17,12 @@ class AlgosTest extends AnyFlatSpec {
     assert(same(randComplex, recovered))
   }
 
+  "basic dft" should "work" in {
+    val randComplex   = (0 until 2).map(_ => BComplex(math.random(), math.random()))
+    val dft2 = Algos.dft2(randComplex)
+    assert(same(dft2, Algos.goldenFft(randComplex)))
+  }
+
   "fft by recursive Cooley-Tukey" should "work" in {
 
     def testRecursive(N: Int) = {

@@ -19,26 +19,10 @@ import scala.reflect.ClassTag
   */
 object Algos {
 
-  // fft
-  def goldenFft(data: Seq[BComplex]): Seq[BComplex] = dvComplex1DFFT(
-    new DenseVector[BComplex](data.toArray)
-  ).toArray.toSeq
-  def goldenIfft(data: Seq[BComplex]): Seq[BComplex] = dvComplexIFFT(
-    new DenseVector[BComplex](data.toArray)
-  ).toArray.toSeq
-
-  def omega(index: Int)(implicit N: Int) = exp(-i * 2 * Pi * index / N) // \omega ^{ik}
-  def beta(index: Int)(implicit N: Int)  = exp(-i * Pi * index / N)     // \omega ^{ik}
-
-  def getFftTwiddle(N: Int, nk: Int): BComplex = breeze.numerics.exp(BComplex(0, -2 * Pi * nk / N))
-
-  def fftTwiddle(data: BComplex, index: Int, N: Int) = data * exp(BComplex(0, -2 * Pi * index / N))
-
+  ////////////////////
+  // FFT architectures
+  ////////////////////
   def getIndicesBetween(N1: Int, N2: Int) = Seq.tabulate(N2, N1)((n2, k1) => n2 * k1).flatten
-
-  def getFftTwiddlesBetween(N1: Int, N2: Int) = getIndicesBetween(N1, N2).map(getFftTwiddle(N1 * N2, _))
-
-  // TODO: Ntt Twiddle
 
   /** implement FFT recursively be decomposing N into N1 and N2
     *
@@ -156,41 +140,38 @@ object Algos {
     ret
   }
 
+  ////////////////////
+  // FFT implementation
+  ////////////////////
+  def goldenFft(data: Seq[BComplex]): Seq[BComplex] = dvComplex1DFFT(
+    new DenseVector[BComplex](data.toArray)
+  ).toArray.toSeq
+  def goldenIfft(data: Seq[BComplex]): Seq[BComplex] = dvComplexIFFT(
+    new DenseVector[BComplex](data.toArray)
+  ).toArray.toSeq
+
+  def dft2(data: Seq[BComplex]) = Seq(data(0) + data(1), data(0) - data(1))
+
+  def getFftTwiddle(N: Int, nk: Int): BComplex = exp(BComplex(0, -2 * Pi * nk / N))
+
+  def doFftTwiddle(data: BComplex, index: Int, N: Int) = data * getFftTwiddle(N, index)
+
+
   def cooleyTukeyFFT(data: Seq[BComplex], factors: Seq[Int]): Seq[BComplex] =
-    doCooleyTukey(data, factors, transform = goldenFft, twiddle = fftTwiddle)
+    doCooleyTukey(data, factors, transform = goldenFft, twiddle = doFftTwiddle)
 
   def radixRFFT(data: Seq[BComplex], radix: Int): Seq[BComplex] =
     cooleyTukeyFFT(data, Seq.fill((log(data.length) / log(radix)).toInt)(radix))
 
-  def stageByStageFFT(data: Seq[BComplex], parallel: Int) =
-    doStageByStage(data, parallel, transform = goldenFft, twiddle = fftTwiddle)
+  def stageByStageFFT(data: Seq[BComplex], parallel: Int): Seq[BComplex] =
+    doStageByStage(data, parallel, transform = goldenFft, twiddle = doFftTwiddle)
+
+  ////////////////////
+  // TODO: NTT implementation
+  ////////////////////
 
   // TODO: implement Cyclic Convolution by FFT
   // TODO: implement Rader DFT
   // TODO: implement Hermitian SymmetricIFFT DFT and Real-Valued FFT
-
-  def fold[T](data: Seq[T]) = data.take(data.length / 2).zip(data.takeRight(data.length / 2))
-
-  // transformations
-  def butterflyReal(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map {
-    case (d, d1) => d - d1
-  }
-  def butterflyComplex(data: Seq[BComplex]): Seq[BComplex] =
-    fold(data).map { case (d, d1) => d + d1 } ++ fold(data).map { case (d, d1) => d - d1 }
-  def swap(data: Seq[Double]) = fold(data).map { case (d, d1) => new BComplex(d, -d1) }
-
-  // reverse transformation
-  def butterflyRealR(data: Seq[Double]): Seq[Double] = fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map {
-    case (d, d1) => (d - d1)
-  }
-  def butterflyComplexR(data: Seq[BComplex]): Seq[BComplex] =
-    fold(data).map { case (d, d1) => (d + d1) } ++ fold(data).map { case (d, d1) => (d - d1) }
-  def swapR(data: Seq[BComplex]): Seq[Double] = {
-    val reals = data.map(_.real)
-    val imags = data.map(complex => -complex.imag)
-    reals ++ imags
-  }
-
-  def bitReverse(N: Int, data: Int) = BigInt(data.toBinaryString.padToLeft(log2Up(N), '0').reverse, 2).toInt
 
 }

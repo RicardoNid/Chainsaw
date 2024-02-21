@@ -22,6 +22,7 @@ case class DelayLineWithBackPressure() extends Component {
 
 case class StreamForkAndJoinExample() extends Component {
   val a, b, c = slave Stream AFix.U(8 bits)
+  val s =  Bool()
   val d, e    = master Stream AFix.U(8 bits)
 
   val Seq(c0, c1) = StreamFork(c, 2, synchronous = true).map(_.m2sPipe())

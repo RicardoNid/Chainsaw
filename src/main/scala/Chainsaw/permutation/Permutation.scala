@@ -39,7 +39,7 @@ class Permutation(val permuted: Seq[Int]) {
   def ++(that: Permutation): Permutation = Permutation(this.permuted ++ that.permuted.map(_ + this.size))
 
   def kronecker(times: Int): Permutation = Seq.fill(times)(this).reduce(_ ++ _)
-  def ⊗(times: Int): Permutation = kronecker(times) // kronecker product
+  def ⊗(times: Int): Permutation         = kronecker(times) // kronecker product
 
   def getPermutationMatrix = {
     val content = Array.tabulate(size, size)((i, j) => if (permuted(i) == j) 1 else 0)
@@ -80,3 +80,5 @@ object Permutation {
     Array.tabulate(col, row)((i, j) => j * col + i).flatten
   )
 }
+
+class PermutationModule()

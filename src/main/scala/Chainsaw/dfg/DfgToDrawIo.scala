@@ -1,6 +1,7 @@
 package Chainsaw.dfg
 
 import java.io.{File, FileOutputStream}
+import com.github.dwickern.macros.NameOf.nameOf
 
 /** methods visualizing Chainsaw Dfg by mapping it to a .drawio xml file
   */
@@ -11,6 +12,7 @@ object DfgToDrawIo {
     import dfg._
 
     clarify()
+
 
     val prefix =
       """
