@@ -1,6 +1,6 @@
 package Chainsaw.algorithms
 
-/** compare and swap module
+/** compare and swap module, a basic building block of sorting networks
   */
 case class Cas[T](cmp: (T, T) => Int, ascending: Boolean) extends Transform[T] {
   override val sizeIn: Int  = 2
@@ -48,4 +48,4 @@ object Bitonic {
   }
 }
 
-// TODO: implement more sorting networks
+// TODO: implement more sorting/permutation networks

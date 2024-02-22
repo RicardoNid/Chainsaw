@@ -94,6 +94,8 @@ object Fft {
     factors
   }
 
+  def getFftTwiddle(N: Int, index: Int): Complex = exp(Complex(0, -2 * Pi * index / N))
+
   def getFft(inverse: Boolean, factors: Seq[Int]): TransformList[Complex] = {
     val dft     = Dft(_, _)
     val twiddle = (t: Complex, i: Int, N: Int) => t * exp(Complex(0, -2 * Pi * i / N))

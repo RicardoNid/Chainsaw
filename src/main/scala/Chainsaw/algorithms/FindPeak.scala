@@ -1,8 +1,6 @@
 package Chainsaw.algorithms
 
-import Chainsaw.algorithms.Fft.getTransform
 import breeze.math.Complex
-import breeze.numerics.exp
 
 object FindPeak {
 

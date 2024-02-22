@@ -1,7 +1,10 @@
 package Chainsaw.algorithms
 
 import Chainsaw._
-import spinal.core.log2Up
+import Chainsaw.algorithms.LinearPermutation.int2GF2
+import spinal.core.{isPow2, log2Up}
+
+import scala.collection.mutable.ArrayBuffer
 
 /** generic model for permutation
   * @param permuted
@@ -21,17 +24,6 @@ class Permutation[T](val permuted: Seq[Int]) extends Transform[T] {
     Matrix(content)
   }
 
-  /** the permutation is linear if a bit matrix exists
-    */
-  def isLinear: Boolean = getBitMatrix match {
-    case Some(value) => true
-    case None        => false
-  }
-
-  def getBitMatrix: Option[Matrix[GF2]] = {
-    // TODO: solve a linear system based on GF2, when size = 2^n, there are n^2 variables and 2^n equations
-    None
-  }
 
   /** @see
     *   ''Automatic Generation of Streaming Datapaths for Arbitrary Fixed Permutations, Peter A. Milder, James C. Hoe,

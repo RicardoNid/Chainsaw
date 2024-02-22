@@ -20,7 +20,6 @@ import scala.io.Source
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.sys.process.Process
-import scala.sys
 
 package object Chainsaw {
 
