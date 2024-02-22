@@ -22,4 +22,11 @@ class LinearPermutationTest extends AnyFlatSpecLike {
 
   }
 
+  it should "recognize the permutations that are linear" in {
+    def test(p: LinearPermutation[_]) = {
+      assert(LinearPermutation.fromPermutation(p.toPermutation).get.bitMatrix == p.bitMatrix)
+    }
+    (3 until 6).foreach(i => test(LinearPermutation.stridePermutation(i, 2)))
+  }
+
 }

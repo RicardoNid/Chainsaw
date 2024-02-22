@@ -207,14 +207,16 @@ case class Matrix[T: ClassTag](data: Array[Array[T]])(implicit field: Field[T]) 
 
   /** Try to solve the linear equation this * x = target, where both x and target are column vectors
     */
-  def solve(target: Matrix[T]): Option[Matrix[T]] = {
+  def solve(target: Matrix[T]): Option[Matrix[T]] = { // TODO: verify the correctness
     require(target.colCount == 1 && target.rowCount == rowCount)
+    val N         = colCount // number of variables
     val augmented = Matrix(data.zip(target.data).map { case (row1, row2) => row1 ++ row2 })
     val ref       = augmented.getRef
     if (ref.isConsistent) {
       if (ref.isUnique) {
-        println("the linear system has a unique solution")
-        Some(ref.getRref) // TODO: return the solution column vector
+        Some(
+          ref.getRref.subMatrix(rowRange = 0 until N, columnRange = N until (N + 1))
+        ) // the first N-1 entries of the last column are the solutions
       } else {
         println("the linear system has infinite many solutions")
         Some(ref.getRref) // TODO: return one of the solutions and print free variables
@@ -238,9 +240,20 @@ case class Matrix[T: ClassTag](data: Array[Array[T]])(implicit field: Field[T]) 
       .flatten
       .forall(_ == true)
 
-  def isLowerTriangular: Boolean = Matrix(data.reverse).isUpperTriangular
+  def isLowerTriangular: Boolean = {
+    Seq
+      .tabulate(rowCount, colCount) { (i, j) =>
+        if (i < j) data(i)(j) == field.zero else true
+      }
+      .flatten
+      .forall(_ == true)
+  }
 
   def isDiagonal: Boolean = isUpperTriangular && isLowerTriangular
+
+  def isIdentity = isDiagonal && (0 until rowCount).forall(i => data(i)(i) == field.one)
+
+  def isZero = data.flatten.forall(_ == field.zero)
 
   def isSymmetric: Boolean = this == transpose
 

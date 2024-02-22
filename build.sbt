@@ -62,7 +62,7 @@ lazy val Chainsaw = (project in file("."))
     libraryDependencies += "org.scalanlp" %% "breeze-viz" % "2.1.0",
     //    libraryDependencies += "cplex.maven" % "cplex" % "12.8", // for cplex solver
     libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "4.0.0" % "provided",
-//    libraryDependencies += algebird
+    libraryDependencies += algebird
   )
 
 fork := true

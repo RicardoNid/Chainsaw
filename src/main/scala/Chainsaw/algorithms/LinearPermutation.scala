@@ -1,8 +1,11 @@
 package Chainsaw.algorithms
 
-import Chainsaw._
-import Chainsaw.algorithms.LinearPermutation.{gf2ToInt, int2GF2}
+import LinearPermutation.{gf2ToInt, int2GF2}
 import spinal.core.log2Up
+import Chainsaw._
+import Chisel.isPow2
+
+import scala.collection.mutable.ArrayBuffer
 
 /** A class representing a linear permutation.
   *
@@ -93,14 +96,16 @@ class LinearPermutation[T](val bitMatrix: Matrix[GF2])
     val a       = m4.data.map(row => row.zip(x2).filter { case (gf, _) => gf != GF2(0) }.map(_._2))
     val b       = m3.data.map(row => row.zip(x1).filter { case (gf, _) => gf != GF2(0) }.map(_._2))
     val address = a.zip(b).map { case (a, b) => (a ++ b).mkString(" + ") }
-    "(" + address.mkString(",") + ")"
+    address.mkString(",")
   }
 
   def solve(k: Int) = {
     // step 1: get M for writing stage and N for reading stage
     val (matrixN, matrixM) = getDecomposition(k)
-    val (m1, m2, m3, m4)   = getPartitions(matrixM, k)
-    val (n1, n2, n3, n4)   = getPartitions(matrixN, k)
+//    println(s"matrixM: \n$matrixM\nmatrixN: \n$matrixN\nbitMatrix: \n${matrixN.getInverse * matrixM}")
+    val (m1, m2, m3, m4) = getPartitions(matrixM, k)
+    val (n1, n2, n3, n4) = getPartitions(matrixN, k)
+    require(n4.isIdentity && n3.isZero, s"bad read address\nn4: ${n4}\nn3: ${n3}")
     // step 2: decompose M2 and N2 to get connecting network
     val connM = getConnectionNetwork(m1, m2, k)
     val connN = getConnectionNetwork(n1, n2, k)
@@ -141,11 +146,14 @@ class LinearPermutation[T](val bitMatrix: Matrix[GF2])
       val H = Matrix(values)
       val N = H.getInverse
       val M = H * bitMatrix
+      require(N.getInverse * M == bitMatrix)
       (N, M)
     } else {
       ??? // TODO: the general case
     }
   }
+
+  def toPermutation: Permutation[T] = Permutation[T](permuted)
 
   override def toString: String = {
     def int2String(i: Int): String = i.toBinaryString.padToLeft(bitMatrix.rowCount, '0')
@@ -155,16 +163,21 @@ class LinearPermutation[T](val bitMatrix: Matrix[GF2])
 }
 object LinearPermutation {
 
+  def apply[T](bitMatrix: Matrix[GF2]): LinearPermutation[T] = new LinearPermutation(bitMatrix)
+
   def int2GF2(i: Int, size: Int): Seq[GF2] = i.toBinaryString.padToLeft(size, '0').map(_.toInt).map(GF2(_))
 
   def gf2ToInt(seq: Seq[GF2]): Int = Integer.parseInt(seq.mkString, 2)
 
-  def bitMatrix2Permutation(bitMatrix: Matrix[GF2]): Seq[Int] =
-    (0 until 1 << bitMatrix.rowCount).map { indexIn =>
+  def bitMatrix2Permutation(bitMatrix: Matrix[GF2]): Seq[Int] = {
+    val permuted = Array.fill(1 << bitMatrix.rowCount)(0)
+    (0 until 1 << bitMatrix.rowCount).foreach { indexIn =>
       val columnIn: Matrix[GF2]  = Matrix.column(int2GF2(indexIn, bitMatrix.rowCount): _*)
       val columnOut: Matrix[GF2] = bitMatrix * columnIn
-      gf2ToInt(columnOut.data.flatten.toSeq) // indexOut
+      permuted.update(gf2ToInt(columnOut.data.flatten.toSeq), indexIn) // indexOut
     }
+    permuted
+  }
 
   def identity[T](n: Int) = {
     val identity = Matrix(Array.tabulate(n, n)((i, j) => GF2(i == j)))
@@ -198,6 +211,37 @@ object LinearPermutation {
     }
   }
 
+  def fromPermutation[T](permutation: Permutation[T]): Option[LinearPermutation[T]] = {
+    val isBase2 = isPow2(permutation.sizeIn)
+    if (!isBase2) None
+    else { // build a linear system of the bit matrix coefficients(according to I/O index) and solve it
+      val n         = log2Up(permutation.sizeIn)
+      val equations = ArrayBuffer[Array[GF2]]()
+      val target    = ArrayBuffer[GF2]()
+      (0 until permutation.sizeIn).foreach { i =>
+        val indexIn   = i
+        val indexOut  = permutation.permuted.indexOf(i)
+        val columnIn  = Matrix.column(int2GF2(indexIn, n): _*)
+        val columnOut = Matrix.column(int2GF2(indexOut, n): _*)
+        (0 until n).foreach { j =>
+          target += columnOut.data.flatten.apply(j)
+          val coeffs = j * n until (j + 1) * n
+          val equation = (0 until n * n).map { k =>
+            if (coeffs.contains(k) && columnIn.data.flatten.apply(k - j * n) == GF2(1)) GF2(1)
+            else GF2(0)
+          }
+          equations += equation.toArray
+        }
+      }
+      val m = Matrix(equations.toArray)
+      val ret = m
+        .solve(Matrix.column(target: _*))
+        .map(column => Matrix(column.data.flatten.grouped(n).toArray)) // column vector -> n X n matrix
+        .map(LinearPermutation[T])                                     // matrix -> linear permutation
+      ret
+    }
+  }
+
 }
 
 /** redefine stride permutation for usage in sorting networks & DSP transforms
@@ -206,7 +250,7 @@ case class SP[T](size: Int, stride: Int) extends Transform[T] {
   override val sizeIn: Int  = size
   override val sizeOut: Int = size
   override def transform(dataIn: Seq[T]): Seq[T] = {
-    val permutation = LinearPermutation.stridePermutation[T](log2Up(size), log2Up(stride))
+    val permutation = LinearPermutation.stridePermutation[T](log2Up(size), log2Up(size / stride))
     permutation.transform(dataIn)
   }
 
