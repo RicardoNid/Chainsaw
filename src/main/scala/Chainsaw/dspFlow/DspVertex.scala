@@ -57,7 +57,7 @@ class Constant(val value: Double)(implicit dfg: DspFlow) extends DspVertex {
 }
 
 ////////////////////
-// operators
+// Numeric operators
 ////////////////////
 
 abstract class BinaryOp(implicit dfg: DspFlow) extends DspVertex {
@@ -83,7 +83,7 @@ class Mult(implicit dfg: DspFlow) extends BinaryOp {
   override val executionTime: Double = 0.0
 }
 
-class ConstMult(val constant:Double)(implicit dfg: DspFlow) extends BinaryOp {
+class ConstMult(val constant: Double)(implicit dfg: DspFlow) extends BinaryOp {
   this.name = f"X$constant%.2f"
 
   override val delay: Int            = 0
@@ -95,4 +95,42 @@ class Sub(implicit dfg: DspFlow) extends BinaryOp {
 
   override val delay: Int            = 0
   override val executionTime: Double = 0.0
+}
+
+////////////////////
+// Periodic modules
+////////////////////
+
+class PeriodicRam(val depth: Int, val writeAddress: Seq[Int], val readAddress: Seq[Int])(implicit dfg: DspFlow)
+    extends DspVertex {
+  this.name = f"PRAM"
+
+  override val delay: Int            = 0 // TODO: proper?
+  override val executionTime: Double = 0.0
+
+  override def inCount: Int = 1
+
+  override def outCount: Int = 1
+}
+
+class PeriodicRom(val depth: Int, val data: Seq[Double])(implicit dfg: DspFlow) extends DspVertex {
+  this.name = f"PROM"
+
+  override val delay: Int            = 0 // TODO: proper?
+  override val executionTime: Double = 0.0
+
+  override def inCount: Int = 0
+
+  override def outCount: Int = 1
+}
+
+class StreamedPermutation(val permutation: Seq[Int], val parallel: Int)(implicit dfg: DspFlow) extends DspVertex {
+  this.name = f"SP"
+
+  override val delay: Int            = 0 // TODO: use actual delay
+  override val executionTime: Double = 0.0
+
+  override def inCount: Int = parallel
+
+  override def outCount: Int = parallel
 }

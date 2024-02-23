@@ -1,8 +1,8 @@
 package Chainsaw.dspFlow
 
+import breeze.math.{Complex => BComplex}
+
 import scala.language.experimental.macros
-import scala.reflect.macros.blackbox
-import breeze.math.{i, Complex => BComplex}
 
 case class Signal(v: DspVertex, outId: Int) {
   def :=(src: Signal)(implicit dfg: DspFlow): Unit = {
@@ -18,7 +18,7 @@ case class Signal(v: DspVertex, outId: Int) {
   }
 
   // basic operators
-def unaryOp(operator: DspVertex)(implicit dfg: DspFlow): Signal = {
+  def unaryOp(operator: DspVertex)(implicit dfg: DspFlow): Signal = {
     val e = new DspEdge(0, this.outId, 0) // TODO: merge existing delay
     dfg.addEdge(this.v, operator, e)
     Signal(operator, 0)
@@ -48,6 +48,8 @@ object S {
   def apply()(implicit dfg: DspFlow): Signal             = Signal(new Inter("anon"), 0)
 
 }
+
+
 
 case class ComplexSignal(real: Signal, imag: Signal)(implicit dfg: DspFlow) {
 
