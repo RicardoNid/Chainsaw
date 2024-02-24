@@ -10,19 +10,23 @@ import spinal.lib.bus._
 import scala.language.postfixOps
 
 // TODO: verification
-// TODO: a fsm-only version without initializing the RAM
-case class StreamedPIPO[T <: Data](dataType: HardType[T], depth: Int) extends Module {
+// TODO: documentation
+case class StreamedPIPOFsm(depth: Int) extends Module {
 
-  val streamIn            = slave(Stream(dataType))
-  val streamOut           = master(Stream(dataType))
-  val writeAddr, readAddr = in UInt (log2Up(depth) bits)
+  // the payload won't be actually used, actually we can use a valid and a ready instead, but for the consistency, we use a Stream
+  val streamIn  = slave(Stream(Bool()))
+  val streamOut = master(Stream(Bool()))
+  streamIn.payload.allowOverride()
+  streamOut.payload.allowOverride()
 
+  // state indicator
   val writeCounter        = Counter(depth, inc = streamIn.fire)
   val readCounter         = Counter(depth, inc = streamOut.fire)
-  val readPing, writePing = RegInit(False) // pointers for ping-pong
+  val writeIndex          = out(writeCounter.value)
+  val readIndex           = out(readCounter.value)
+  val readPing, writePing = out(RegInit(False)) // pointers for ping-pong
   readPing.toggleWhen(readCounter.willOverflow)
   writePing.toggleWhen(writeCounter.willOverflow)
-  val ping, pong = Mem(dataType, depth)
 
   val fsm = new StateMachine {
     val empty      = new State with EntryPoint
@@ -40,14 +44,44 @@ case class StreamedPIPO[T <: Data](dataType: HardType[T], depth: Int) extends Mo
     streamOut.valid := isActive(full) || isActive(half)
   }
 
+  streamOut.payload.set() // need no actual implementation
+
+  def freeRun(): Unit = {
+    streamIn.valid.set()
+    streamOut.ready.set()
+  }
+
+  def <<[T <: Data](stream: Stream[T]): Unit = {
+    streamIn.arbitrationFrom(stream)
+    streamIn.payload.set() // need no driver
+  }
+  def >>[T <: Data](stream: Stream[T]): Unit = {
+    stream.arbitrationFrom(streamOut)
+  }
+}
+
+case class StreamedPIPO[T <: Data](dataType: HardType[T], depth: Int) extends Module {
+
+  val streamIn            = slave(Stream(dataType))
+  val streamOut           = master(Stream(dataType))
+  val writeAddr, readAddr = in UInt (log2Up(depth) bits)
+
+  val fsm = StreamedPIPOFsm(depth)
+  fsm << streamIn
+  fsm >> streamOut
+
+  val ping, pong = Mem(dataType, depth)
+
   // RAM operation
-  ping.write(writeAddr, streamIn.payload, streamIn.fire && writePing)
-  pong.write(writeAddr, streamIn.payload, streamIn.fire && !writePing)
-  streamOut.payload := Mux(readPing, ping.readAsync(readAddr), pong.readAsync(readAddr))
+  ping.write(writeAddr, streamIn.payload, streamIn.fire && fsm.writePing)
+  pong.write(writeAddr, streamIn.payload, streamIn.fire && !fsm.writePing)
+  streamOut.payload := Mux(fsm.readPing, ping.readAsync(readAddr), pong.readAsync(readAddr))
 
   // state indicator
-  val writeIndex = out(writeCounter.value)
-  val readIndex  = out(readCounter.value)
+  val writeIndex = out(UInt(log2Up(depth) bits))
+  writeIndex := fsm.writeIndex
+  val readIndex = out(UInt(log2Up(depth) bits))
+  readIndex := fsm.readIndex
 
   def freeRun(): Unit = {
     streamIn.valid.set()
@@ -56,25 +90,5 @@ case class StreamedPIPO[T <: Data](dataType: HardType[T], depth: Int) extends Mo
 
   def <<(stream: Stream[T]): Unit = stream    >> streamIn
   def >>(stream: Stream[T]): Unit = streamOut >> stream
-
-}
-
-object StreamedPIPO {
-
-  case class StreamedPIPOExample() extends Module {
-    val io = new Bundle {
-      val in  = slave(Stream(UInt(8 bits)))
-      val out = master(Stream(UInt(8 bits)))
-    }
-    val pipo = StreamedPIPO(UInt(8 bits), 16)
-    pipo.writeAddr := pipo.writeIndex
-    pipo.readAddr  := pipo.readIndex
-    pipo           << io.in
-    pipo           >> io.out
-  }
-
-  def main(args: Array[String]): Unit = {
-    SpinalVerilog(StreamedPIPOExample())
-  }
 
 }

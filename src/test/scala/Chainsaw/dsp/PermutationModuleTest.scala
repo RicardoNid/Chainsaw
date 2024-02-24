@@ -15,7 +15,7 @@ class PermutationModuleTest extends AnyFlatSpec {
       .compile(pm)
       .doSim { dut =>
         dut.clockDomain.forkStimulus(2)
-        dut.dataIn.valid #= false
+        dut.dataIn.valid  #= false
         dut.dataOut.ready #= false
         dut.clockDomain.waitSampling()
         dut.dataOut.ready #= true // free run
@@ -60,6 +60,9 @@ class PermutationModuleTest extends AnyFlatSpec {
     // bit reversal
     val reversed = LinearPermutation.bitReversal(6).permuted
     (2 until 6).foreach(s => testPermutationModule(new PermutationModule(reversed, 1 << s, HardType(UInt(6 bits)))))
+    // perfect shuffle
+    val shuffled = LinearPermutation.perfectShuffle(6).permuted
+    (2 until 6).foreach(s => testPermutationModule(new PermutationModule(shuffled, 1 << s, HardType(UInt(6 bits)))))
   }
 
   it should "work for unrolled permutation" in {

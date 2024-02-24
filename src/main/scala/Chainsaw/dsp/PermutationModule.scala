@@ -2,7 +2,7 @@ package Chainsaw.dsp
 
 import Chainsaw.DataUtil
 import Chainsaw.algorithms._
-import Chainsaw.memory.StreamedPIPO
+import Chainsaw.memory.StreamedPIPOFsm
 import spinal.core._
 import spinal.core.sim.SimDataPimper
 import spinal.lib._
@@ -13,8 +13,8 @@ import scala.reflect.ClassTag
 
 // TODO: implement this module
 //  1. for different configurations
-//  2. making this module stream-based and halt-able
-//  3. making this module an operator for DSP-DSL
+//  2. making this module stream-based and halt-able - need a Stream test suite
+//  3. making this module an operator for DSP-DSL and a sub component of FindPeak
 case class PermutationModule[T <: Data: ClassTag](
     permuted: Seq[Int],
     parallel: Int,
@@ -41,99 +41,109 @@ case class PermutationModule[T <: Data: ClassTag](
         case Some(lp) =>
           val usingRAMs = true // TODO: judge
           if (usingRAMs) { // using RAMs
-            BuildLinearPermutation(dataIn, dataOut, lp)
-            latency = period
+            latency = BuildLinearPermutation(dataIn, dataOut, lp)
           } else ??? // using registers & switches
         case None => ??? // Arbitrary Permutation
       }
     }
   }
-
   require(latency >= 0)
-
 }
 
-// TODO: ping-pong and back-pressure
-// TODO: make combinational logic as functions, build the datapath by Stream operations(mainly, translateWith)
 object BuildLinearPermutation {
   def apply[T <: Data: ClassTag](
       streamIn: Stream[Vec[T]],
       streamOut: Stream[Vec[T]],
       lp: LinearPermutation[T]
-  ): Unit = {
+  ): Int = {
 
     // building block for connection networks
     def switch2(a: Bits, b: Bits, swap: Bool): (Bits, Bits) = (Mux(swap, b, a), Mux(swap, a, b))
 
-    val parallel = streamIn.payload.size
-    val period   = lp.sizeIn / parallel
-
-    val dataType = HardType(Bits(streamIn.payload.head.getBitsWidth bits))
-
+    // parameters and the solution
+    val parallel                                        = streamIn.payload.size
+    val period                                          = lp.sizeIn / parallel
     val s                                               = log2Up(parallel)
-    val (n, k, connM, connN, writeAddress, readAddress) = lp.solve(s)
+    val (n, k, connM, connN, writeAddress, readAddress) = lp.solve(s) // solution describing how this module works
 
-    // components
-    val counterWrite = Counter(period, inc = streamIn.fire)
-    val counterRead  = Counter(period, inc = streamIn.fire) // FIXME: should be decided by the fire signal after RAN
+    // building methods
 
-    def throughNetwork( //  TODO: pipelined version
+    // zip data with index(where in stage) for writeAddr generation
+    def withIndex(data: Vec[T]) = Vec(data.zipWithIndex.map { case (data, index) => data.asBits ## B(index, s bits) })
+
+    def goThroughNetwork(
         description: Array[(immutable.IndexedSeq[Array[Int]], String)],
-        symbol: Char,
-        data: Vec[Bits]
+        stageCount: UInt,
+        data: Stream[Vec[Bits]]
     ) = {
 
-      def str2Bit(str: String): Bool = {
-        val index = str.split("_").last.toInt
-        require(index >= s)
-        if (symbol == 'W') counterWrite.value(index - s)
-        else counterRead.value(index - s)
+      // bundle data and the counter value, so that they can be pipelined together
+      case class DataWithCount(dataWidth: Int, parallel: Int, countWidth: Int) extends Bundle {
+        val data  = Vec(Bits(dataWidth bits), parallel)
+        val count = UInt(countWidth bits)
       }
+      val bitWidth = data.payload.head.getBitsWidth
+      def getBundle(data: Vec[Bits], count: UInt) = {
+        val ret = DataWithCount(bitWidth, parallel, stageCount.getWidth)
+        ret.data  := data
+        ret.count := count
+        ret
+      }
+      // TODO: to avoid the boilerplate below, we may need an "easy bundle" type <: Data which is a tuple of multiple data
 
-      var current = Array(data: _*)
-      val next    = Array(data: _*)
-      description.zipWithIndex.foreach { case ((switches, control), i) =>
-        val controlBit = str2Bit(control) // parsing control bit
-        controlBit.setName(s"control_$symbol$i")
-        controlBit.simPublic()
+      val streamIn = data.translateWith(getBundle(data.payload, stageCount))
+      // stage by stage spatial permutation
+      val ret = description.foldLeft(streamIn) { case (stream, (switches, control)) =>
+        // get control bit from its description
+        val payload    = stream.payload.data
+        val count      = stream.payload.count
+        val index      = control.split("_").last.toInt
+        val controlBit = count(index - s)
+        val next       = Array(payload: _*) // using Array as it can be updated
         switches.foreach { switch =>
           val Array(i, j, x, y) = switch
-          val (a, b)            = switch2(current(i), current(j), controlBit)
+          val (a, b)            = switch2(payload(i), payload(j), controlBit)
           next.update(x, a)
           next.update(y, b)
         }
-        current = next
+        stream.translateWith(getBundle(Vec(next), count)).m2sPipe()
       }
-      Vec(next)
+      ret.map(_.data)
     }
 
-    def goThroughRAM(data: Stream[Vec[Bits]]) = {
-      data.ready.allowOverride()
-      val subStreams = (0 until data.payload.length).map { i =>
-        val subStream: Stream[Bits] = data.map(_.apply(i))
-        val bits                    = subStream.payload
-        val (index, payload)        = bits.splitAt(s)
-        val pipo                    = new StreamedPIPO(dataType, period)
-        pipo.readAddr := pipo.readIndex
-        val v                   = pipo.writeIndex @@ index.asUInt
+    def goThroughRAM(data: Stream[Vec[Bits]], pipoFsm: StreamedPIPOFsm) = {
+      // as different RAM need different write address, cannot use a StreamedFIFO[Vec[Bits]], instead, we instantiated RAMs separately, but shared the same PIPO FSM
+      val ret: Seq[Bits] = (0 until data.payload.length).map { i =>
+        val payload             = data.payload(i)
+        val (bits, index)       = payload.splitAt(s)
+        val ping, pong          = Mem(HardType(bits), period)
+        val readAddr            = pipoFsm.readIndex
+        val inputVector         = pipoFsm.writeIndex @@ index.asUInt // the [x_2|x_1] vector in paper
         val indices: Array[Int] = writeAddress.split(",").map(_.split("_").last.toInt)
-        val writeAddr           = indices.map(v(_)).map(_.asBits).reduce(_ ## _).asUInt
-        pipo.writeAddr := writeAddr
-        pipo           << subStream.map(_.takeHigh(subStream.payload.getBitsWidth - s))
-        pipo.streamOut
+        val writeAddr           = indices.map(inputVector(_)).map(_.asBits).reduce(_ ## _).asUInt
+        // RAM operations
+        ping.write(writeAddr, bits, streamIn.fire && pipoFsm.writePing)
+        pong.write(writeAddr, bits, streamIn.fire && !pipoFsm.writePing)
+        Mux(pipoFsm.readPing, ping.readAsync(readAddr), pong.readAsync(readAddr))
       }
-      StreamJoin.vec(subStreams) // TODO: reductive AND off subStreams redundant
+      pipoFsm.streamOut.translateWith(Vec(ret))
     }
 
     // streamed data path
-    val streamWithIndex = streamIn.map(vec =>
-      Vec(vec.zipWithIndex.map { case (data, index) => data.asBits ## B(index, log2Up(parallel) bits) })
-    )
-    val streamAfterConnM = streamWithIndex.map(throughNetwork(connM, 'W', _))
-    val streamAfterRam   = goThroughRAM(streamAfterConnM)
-    val streamAfterConnN = streamAfterRam.map(throughNetwork(connN, 'R', _))
+    val streamWithIndex  = streamIn.map(withIndex)
+    val counterWrite     = Counter(period, inc = streamWithIndex.fire)
+    val streamAfterConnM = goThroughNetwork(connM, counterWrite.value, streamWithIndex)
+    val pipoFsm          = StreamedPIPOFsm(period)
+    pipoFsm << streamAfterConnM
+    val streamAfterRam   = goThroughRAM(streamAfterConnM, pipoFsm)
+    val counterRead      = Counter(period, inc = streamAfterRam.fire)
+    val streamAfterConnN = goThroughNetwork(connN, counterRead.value, streamAfterRam)
     streamOut.arbitrationFrom(streamAfterConnN)
     streamOut.payload.zip(streamAfterConnN.payload).foreach { case (out, data) => out.assignFromBits(data) }
 
+    val latency = connM.length + // for connection network M
+      period +     // for PIPO
+      connN.length // for connection network N
+    latency
   }
 }
