@@ -155,6 +155,8 @@ class LinearPermutation[T](val bitMatrix: Matrix[GF2])
 
   def toPermutation: Permutation[T] = Permutation[T](permuted)
 
+  def getInverse = LinearPermutation[T](bitMatrix.getInverse)
+
   override def toString: String = {
     def int2String(i: Int): String = i.toBinaryString.padToLeft(bitMatrix.rowCount, '0')
     "permutation: \n" + (0 until sizeIn).map(i => s"${int2String(i)} -> ${int2String(permuted(i))}").mkString("\n")

@@ -11,6 +11,8 @@ abstract class Transform[T] {
   val sizeOut: Int
   def transform(dataIn: Seq[T]): Seq[T]
 
+  // TODO: an extra "symbol" method, so that it can be displayed properly in a TransformList
+
 }
 
 /** a transform step, which is a sequence of transforms executed in parallel
@@ -106,7 +108,7 @@ class TransformList[T](val steps: Seq[TransformStep[T]]) {
 
   // visualization methods
   // TODO: better visualization
-  def printSteps() = println(s"steps:\n${steps.mkString("\n")}")
+  def printSteps() = println(s"steps:\n${steps.mkString("\n")}") // TODO: align modules
 
   def drawSteps() = {
     // TODO: draw the schematic by drawio
@@ -122,4 +124,6 @@ class TransformList[T](val steps: Seq[TransformStep[T]]) {
        |${steps.map(_.getFolded(parallelism)).mkString("\n")}
        |""".stripMargin
   )
+
+  override def toString: String = s"steps:\n${steps.mkString("\n")}"
 }

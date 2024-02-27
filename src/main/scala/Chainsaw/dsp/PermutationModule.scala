@@ -29,25 +29,24 @@ case class PermutationModule[T <: Data: ClassTag](
   val isBase2     = isPow2(parallel) && isPow2(permuted.size)
   var latency     = -1
 
-  if (parallel == permuted.size) { // hard-wired
+  if (parallel == permuted.size) { // full-parallel(hard-wired)
     val permuted = Vec(permutation.transform(dataIn.payload))
     dataIn.translateWith(permuted) >> dataOut
     latency = 0
-  } else if (parallel == 1) { // serial permutation using RAM
+  } else if (parallel == 1) { // serial
     ???
-  } else {
+  } else { // partial-parallel
     if (isBase2) {
       LinearPermutation.fromPermutation(permutation) match { // Linear Permutation
         case Some(lp) =>
           val usingRAMs = true // TODO: judge
-          if (usingRAMs) { // using RAMs
-            latency = BuildLinearPermutation(dataIn, dataOut, lp)
-          } else ??? // using registers & switches
+          if (usingRAMs) latency = BuildLinearPermutation(dataIn, dataOut, lp) // using RAMs
+          else ??? // using registers & switches
         case None => ??? // Arbitrary Permutation
       }
     }
   }
-  require(latency >= 0)
+  require(latency >= 0, "no proper implementation for this configuration")
 }
 
 object BuildLinearPermutation {
