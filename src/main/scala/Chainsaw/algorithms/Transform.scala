@@ -10,6 +10,7 @@ abstract class Transform[T] {
   val sizeIn: Int
   val sizeOut: Int
   def transform(dataIn: Seq[T]): Seq[T]
+  def symbol: String
 
   // TODO: an extra "symbol" method, so that it can be displayed properly in a TransformList
 
@@ -39,7 +40,7 @@ class TransformStep[T](val transforms: Seq[Transform[T]]) {
   def sizeIn: Int  = transforms.map(_.sizeIn).sum
   def sizeOut: Int = transforms.map(_.sizeOut).sum
 
-  override def toString: String = transforms.mkString(" ++ ")
+  override def toString: String = transforms.map(_.symbol).mkString("++")
 
   /** indicate how this step should be folded to fit the target parallelism
     * @param parallelism
@@ -68,8 +69,8 @@ class TransformStep[T](val transforms: Seq[Transform[T]]) {
       val t0 = segment.head
       if (t0.sizeIn <= parallelism) {
         if (segment.length > 1 && segment.forall(_ == t0)) s"${t0.toString} ⊗ ${segment.length}"
-        else segment.map(_.toString).mkString(" ++ ")
-      } else s"${t0.toString} folded by ${t0.sizeIn / parallelism}"
+        else segment.map(_.symbol).mkString(" ++ ")
+      } else s"${t0.symbol} folded by ${t0.sizeIn / parallelism}"
     }
 
     if (descriptions.forall(_ == descriptions.head)) descriptions.head
@@ -108,7 +109,23 @@ class TransformList[T](val steps: Seq[TransformStep[T]]) {
 
   // visualization methods
   // TODO: better visualization
-  def printSteps() = println(s"steps:\n${steps.mkString("\n")}") // TODO: align modules
+  def printSteps() = println(toString)
+
+  def foreachStep(f: TransformStep[T] => Unit) = steps.foreach(f)
+
+  def foreachTransform(f: Transform[T] => Unit) = steps.foreach(_.transforms.foreach(f))
+
+  override def toString: String = {
+    val widthFactorDouble = steps.flatMap(_.transforms.map(t => t.symbol.length / t.sizeIn.toDouble)).max
+    val widthFactor       = scala.math.ceil(widthFactorDouble).toInt
+    def getPadded(transform: Transform[T]) = {
+      val space = transform.sizeIn * widthFactor
+      val left  = (space - transform.symbol.length) / 2
+      val right = space - left - transform.symbol.length
+      " " * left + transform.symbol + " " * right
+    }
+    steps.map(_.transforms.map(getPadded).mkString("")).mkString("\n")
+  }
 
   def drawSteps() = {
     // TODO: draw the schematic by drawio
@@ -125,5 +142,5 @@ class TransformList[T](val steps: Seq[TransformStep[T]]) {
        |""".stripMargin
   )
 
-  override def toString: String = s"steps:\n${steps.mkString("\n")}"
+//  override def toString: String = s"steps:\n${steps.mkString("\n")}"
 }

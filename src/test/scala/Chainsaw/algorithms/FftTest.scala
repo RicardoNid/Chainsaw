@@ -26,11 +26,12 @@ class FftTest extends AnyFlatSpecLike {
   }
 
   it should "indicate how it should be folded" in {
-    val N = 128
+    val N = 32
     (1 until 7).foreach { i =>
       val parallelism = 1 << i
       val factors     = Fft.getFactorsForStreaming(N, parallelism)
       val transform   = Fft.getFft(inverse = false, factors)
+      transform.printSteps()
       transform.printFolded(parallelism)
     }
 

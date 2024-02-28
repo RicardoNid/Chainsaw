@@ -10,6 +10,8 @@ object Dft2 extends Transform[ComplexSignal] {
 
   override def transform(dataIn: Seq[ComplexSignal]): Seq[ComplexSignal] =
     dataIn(0) + dataIn(1) :: dataIn(0) - dataIn(1) :: Nil
+
+  override def symbol: String = "DFT2"
 }
 
 case class DfgUnderTest(id: Int) extends DspFlow {

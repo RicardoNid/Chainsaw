@@ -1,11 +1,13 @@
 package Chainsaw.algorithms
 
+import Chainsaw.algorithms.LinearPermutation.sp
 import breeze.linalg.DenseVector
 import breeze.math.Complex
 import breeze.numerics.constants.Pi
 import breeze.numerics.exp
 import breeze.signal.fourierTr.dvComplex1DFFT
 import breeze.signal.iFourierTr.dvComplexIFFT
+import spinal.core.log2Up
 
 import scala.collection.mutable.ArrayBuffer
 import scala.math.log
@@ -31,7 +33,7 @@ case class Dft(size: Int, inverse: Boolean) extends Transform[Complex] {
     }
   }
 
-  override def toString: String = s"DFT($size)"
+  override def symbol: String = s"DFT($size)"
 }
 
 case class Twiddle[T](N1: Int, N2: Int, twiddle: (T, Int, Int) => T, inverse: Boolean) extends Transform[T] {
@@ -46,7 +48,7 @@ case class Twiddle[T](N1: Int, N2: Int, twiddle: (T, Int, Int) => T, inverse: Bo
     dataIn.zip(indices).map { case (t, i) => twiddle(t, i, size) }
   }
 
-  override def toString: String = s"Twiddle($N1, $N2)"
+  override def symbol: String = s"Twiddle($N1, $N2)"
 }
 object Fft {
 
@@ -73,10 +75,10 @@ object Fft {
     if (factors.length == 1) dft(N, inverse)
     else {
       // T -> PTMPTP
-      val p0 = SP[T](N, N2)
+      val p0 = sp[T](N, N2)
       val t0 = dft(N1, inverse) ⊗ N2
       val m  = Twiddle(N1, N2, twiddle, inverse)
-      val p1 = SP[T](N, N1)
+      val p1 = sp[T](N, N1)
       val t1 = getTransform(dft, twiddle, inverse, factors.tail) ⊗ N1
 
       p0 * t0 * m * p1 * t1 * p0

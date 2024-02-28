@@ -24,7 +24,6 @@ class Permutation[T](val permuted: Seq[Int]) extends Transform[T] {
     Matrix(content)
   }
 
-
   /** @see
     *   ''Automatic Generation of Streaming Datapaths for Arbitrary Fixed Permutations, Peter A. Milder, James C. Hoe,
     *   and Markus P¨uschel'', "mapping \Pi_w"
@@ -39,6 +38,8 @@ class Permutation[T](val permuted: Seq[Int]) extends Transform[T] {
     Matrix(mappintMatrix)
   }
   override def toString: String = "permutation: \n" + (0 until sizeIn).map(i => s"$i -> ${permuted(i)}").mkString("\n")
+
+  override def symbol: String = s"P(${sizeIn})"
 
 }
 

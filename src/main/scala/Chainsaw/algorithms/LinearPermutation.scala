@@ -162,6 +162,8 @@ class LinearPermutation[T](val bitMatrix: Matrix[GF2])
     "permutation: \n" + (0 until sizeIn).map(i => s"${int2String(i)} -> ${int2String(permuted(i))}").mkString("\n")
   }
 
+  override def symbol: String = s"LP($sizeIn)"
+
 }
 object LinearPermutation {
 
@@ -213,6 +215,9 @@ object LinearPermutation {
     }
   }
 
+  def sp[T](size: Int, stride: Int): LinearPermutation[T] = LinearPermutation.stridePermutation[T](log2Up(size), log2Up(size / stride))
+
+
   def fromPermutation[T](permutation: Permutation[T]): Option[LinearPermutation[T]] = {
     val isBase2 = isPow2(permutation.sizeIn)
     if (!isBase2) None
@@ -244,17 +249,4 @@ object LinearPermutation {
     }
   }
 
-}
-
-/** redefine stride permutation for usage in sorting networks & DSP transforms
-  */
-case class SP[T](size: Int, stride: Int) extends Transform[T] {
-  override val sizeIn: Int  = size
-  override val sizeOut: Int = size
-  override def transform(dataIn: Seq[T]): Seq[T] = {
-    val permutation = LinearPermutation.stridePermutation[T](log2Up(size), log2Up(size / stride))
-    permutation.transform(dataIn)
-  }
-
-  override def toString: String = s"SP($size, $stride)"
 }

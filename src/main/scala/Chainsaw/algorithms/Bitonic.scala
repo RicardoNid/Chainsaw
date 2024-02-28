@@ -1,5 +1,8 @@
 package Chainsaw.algorithms
 
+import spinal.core.log2Up
+import LinearPermutation.sp
+
 /** compare and swap module, a basic building block of sorting networks
   */
 case class Cas[T](cmp: (T, T) => Int, ascending: Boolean) extends Transform[T] {
@@ -13,20 +16,19 @@ case class Cas[T](cmp: (T, T) => Int, ascending: Boolean) extends Transform[T] {
     if (ascending) ret else ret.reverse
   }
 
-  override def toString: String = if (ascending) "↑" else "↓"
+  override def symbol: String = if (ascending) "↑" else "↓"
 }
 
 /** Bitonic sorting network implementation by transform
   */
 object Bitonic {
-
   /** get the bitonic merge module, which make bitonic sequence sorted
     */
   def getBM[T](size: Int, ascending: Boolean, cmp: (T, T) => Int): TransformList[T] = {
     if (size == 2) Cas(cmp, ascending)
     else {
       val step0 = Cas(cmp, ascending) ⊗ (size / 2)
-      val step1 = SP[T](size, 2) * (SP[T](size / 2, size / 4) ⊗ 2)
+      val step1 = sp[T](size, 2) * (sp[T](size / 2, size / 4) ⊗ 2)
       val step2 = getBM(size / 2, ascending, cmp) ++ getBM(size / 2, ascending, cmp)
       step0 * step1 * step2
     }
@@ -41,7 +43,7 @@ object Bitonic {
     if (size == 2) getBM(size, ascending, cmp)
     else {
       val step0 = (getNetwork(size / 2, ascending, cmp) ++ getNetwork(size / 2, !ascending, cmp))
-      val step1 = SP[T](size, size / 2)
+      val step1 = sp[T](size, size / 2)
       val step2 = getBM(size, ascending, cmp)
       step0 * step1 * step2
     }
